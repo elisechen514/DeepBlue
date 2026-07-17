@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深蓝的消解 — 互动叙事空间</title>
+    <!-- 引入 Tailwind CSS 用于快速构建精致排版 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 GSAP 用于实现丝滑的过渡动画 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        deepsea: '#050c18',
+                        oceanblue: '#0d2040',
+                        techcyan: '#00f0ff',
+                        techgreen: '#39ff14',
+                    },
+                    fontFamily: {
+                        serif: ['Cinzel', 'Noto Serif SC', 'Georgia', 'serif'],
+                        mono: ['Courier New', 'Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;600&display=swap');
+        
+        body {
+            font-family: 'Noto Serif SC', serif;
+            background: radial-gradient(circle at center, #0d2040 0%, #050c18 100%);
+            overflow-x: hidden;
+        }
+
+        /* 模拟头膜仪的微弱扫描线效果 */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 255, 0, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        /* 呼吸光效 */
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 10px rgba(0, 240, 255, 0.5); }
+            50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 25px rgba(0, 240, 255, 0.8); }
+        }
+        .node-glow {
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col justify-between selection:bg-techcyan selection:text-deepsea">
+
+    <!-- 模拟头膜仪视觉滤镜 -->
+    <div class="scanlines"></div>
+
+    <!-- 最初始版状态栏设计 -->
+    <header class="p-6 flex justify-between items-center border-b border-white/10 z-50">
+        <div class="flex items-center space-x-3">
+            <span class="w-2.5 h-2.5 rounded-full bg-techcyan animate-ping"></span>
+            <span class="font-mono text-xs tracking-widest text-techcyan">SYS.STATUS: ACTIVE // MEMORY 93%</span>
+        </div>
+        
+        <h1 class="text-lg md:text-xl font-semibold tracking-wider text-center cursor-pointer" onclick="backToHub()">
+            《深蓝的消解》<span class="text-xs text-slate-400 font-light block md:inline md:ml-2">互动叙事空间</span>
+        </h1>
+
+        <!-- 音频缓冲与定位参数 -->
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+                <button onclick="toggleMusic()" id="musicBtn" class="px-3 py-1 rounded border border-techcyan/40 text-xs text-techcyan hover:bg-techcyan/10 transition-all font-mono">
+                    [ BGM: OFF ]
+                </button>
+                <audio id="bgmAudio" loop preload="auto"></audio>
+            </div>
+            <div class="font-mono text-xs text-slate-400 hidden lg:block">
+                LAT: 18.24° N | LON: 109.51° E
+            </div>
+        </div>
+    </header>
+
+    <!-- 主交互区 -->
+    <main class="flex-grow flex flex-col items-center justify-center relative px-4 py-8 z-40">
+        
+        <!-- 【HUB：记忆脉络轴】 -->
+        <div id="hubView" class="w-full max-w-5xl flex flex-col items-center py-12">
+            
+            <!-- 最初始版前言文字 -->
+            <p class="text-center text-sm md:text-base text-slate-400 max-w-md mx-auto mb-16 font-light leading-relaxed">
+                “大海永远公平地向所有人敞开，却只有极少数人能制作出真正的杰作。”<br>
+                <span class="text-xs text-techcyan/60 block mt-2 font-mono">点击脉络上的线索节点，唤醒深海切片</span>
+            </p>
+
+            <!-- 脉络轴容器 -->
+            <div class="relative w-full py-16 flex flex-col md:flex-row items-center justify-between">
+                
+                <!-- 背景波动线（SVG 连接线） -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+                    <svg class="w-full h-32 md:h-24" viewBox="0 0 1000 100" preserveAspectRatio="none">
+                        <path d="M 0,50 Q 250,10 500,50 T 1000,50" fill="none" stroke="url(#line-grad)" stroke-width="2" />
+                        <defs>
+                            <linearGradient id="line-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#00f0ff" />
+                                <stop offset="50%" stop-color="#39ff14" />
+                                <stop offset="100%" stop-color="#00f0ff" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+
+                <!-- 节点 1: 潜水少年 (恢复第一版所有中文字符) -->
+                <div class="node-item flex flex-col items-center z-10 my-4 md:my-0 cursor-pointer group" onclick="showThread('boy')">
+                    <div class="w-12 h-12 rounded-full bg-oceanblue border border-techcyan flex items-center justify-center node-glow transition-all duration-300 group-hover:scale-110">
+                        <span class="font-mono text-xs text-techcyan">01</span>
+                    </div>
+                    <span class="mt-4 text-sm font-medium tracking-widest text-slate-300 group-hover:text-techcyan transition-colors">潜水少年</span>
+                    <span class="text-[10px] font-mono text-slate-500 mt-1">肉身体验</span>
+                </div>
+
+                <!-- 节点 2: 头膜仪 -->
+                <div class="node-item flex flex-col items-center z-10 my-4 md:my-0 cursor-pointer group" onclick="showThread('device')">
+                    <div class="w-12 h-12 rounded-full bg-oceanblue border border-techgreen flex items-center justify-center node-glow transition-all duration-300 group-hover:scale-110" style="animation-delay: 0.6s">
+                        <span class="font-mono text-xs text-techgreen">02</span>
+                    </div>
+                    <span class="mt-4 text-sm font-medium tracking-widest text-slate-300 group-hover:text-techgreen transition-colors">头膜仪</span>
+                    <span class="text-[10px] font-mono text-slate-500 mt-1">数据介入</span>
+                </div>
+
+                <!-- 节点 3: 父亲 -->
+                <div class="node-item flex flex-col items-center z-10 my-4 md:my-0 cursor-pointer group" onclick="showThread('father')">
+                    <div class="w-12 h-12 rounded-full bg-oceanblue border border-slate-400 flex items-center justify-center node-glow transition-all duration-300 group-hover:scale-110" style="animation-delay: 1.2s">
+                        <span class="font-mono text-xs text-slate-300">03</span>
+                    </div>
+                    <span class="mt-4 text-sm font-medium tracking-widest text-slate-300 group-hover:text-white transition-colors">父亲</span>
+                    <span class="text-[10px] font-mono text-slate-500 mt-1">不可逆生命</span>
+                </div>
+
+                <!-- 节点 4: 彩绘日志 -->
+                <div class="node-item flex flex-col items-center z-10 my-4 md:my-0 cursor-pointer group" onclick="showThread('journal')">
+                    <div class="w-12 h-12 rounded-full bg-oceanblue border border-amber-400 flex items-center justify-center node-glow transition-all duration-300 group-hover:scale-110" style="animation-delay: 1.8s">
+                        <span class="font-mono text-xs text-amber-400">04</span>
+                    </div>
+                    <span class="mt-4 text-sm font-medium tracking-widest text-slate-300 group-hover:text-amber-400 transition-colors">彩绘日志</span>
+                    <span class="text-[10px] font-mono text-slate-500 mt-1">色彩模拟</span>
+                </div>
+
+                <!-- 节点 5: 大海 -->
+                <div class="node-item flex flex-col items-center z-10 my-4 md:my-0 cursor-pointer group" onclick="showThread('ocean')">
+                    <div class="w-12 h-12 rounded-full bg-oceanblue border border-sky-400 flex items-center justify-center node-glow transition-all duration-300 group-hover:scale-110" style="animation-delay: 2.4s">
+                        <span class="font-mono text-xs text-sky-400">05</span>
+                    </div>
+                    <span class="mt-4 text-sm font-medium tracking-widest text-slate-300 group-hover:text-sky-400 transition-colors">海洋</span>
+                    <span class="text-[10px] font-mono text-slate-500 mt-1">无限虚无</span>
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- 【THREAD CONTENT：具体线索展示区（默认隐藏）】 -->
+        <div id="threadView" class="hidden w-full max-w-4xl bg-oceanblue/40 border border-white/10 rounded-2xl p-6 md:p-10 backdrop-blur-md relative animate-fade-in">
+            
+            <!-- 返回按钮 -->
+            <button onclick="backToHub()" class="absolute top-6 right-6 font-mono text-xs text-slate-400 hover:text-techcyan transition-colors flex items-center space-x-1">
+                <span>[ ESC // 返回深处 ]</span>
+            </button>
+
+            <!-- 顶部线索标识 -->
+            <div id="threadTag" class="font-mono text-xs tracking-widest text-techcyan mb-6">
+                THREAD // 01
+            </div>
+
+            <!-- 主标题 -->
+            <h2 id="threadTitle" class="text-2xl md:text-3xl font-light tracking-wide mb-8 border-b border-white/5 pb-4">
+                线索标题
+            </h2>
+
+            <!-- 专属交互动态容器 -->
+            <div id="specialWidget" class="mb-8 hidden">
+                <!-- 动态注入的交互组件 -->
+            </div>
+
+            <!-- 小说文本内容 -->
+            <div id="threadText" class="text-slate-300 leading-relaxed text-base md:text-lg space-y-6 font-light max-h-[50vh] overflow-y-auto pr-4">
+                <!-- 段落文本及对应的图片 -->
+            </div>
+            
+        </div>
+
+    </main>
+
+    <!-- 底部页脚 -->
+    <footer class="p-6 text-center text-xs text-slate-500 border-t border-white/5 z-50">
+        <p>基于小说文本构建的数字具身体验空间 | 极速 CDN & 智能缓冲版</p>
+    </footer>
+
+    <!-- 核心交互脚本 -->
+    <script>
+        // 自动解析当前运行域名，若为 github.io 则自动走 jsDelivr 高速 CDN 代理
+        function getCDNPath(localPath) {
+            const host = window.location.host;
+            const pathname = window.location.pathname;
+            
+            if (host.endsWith('github.io')) {
+                const username = host.split('.')[0];
+                const repo = pathname.split('/')[1];
+                if (username && repo) {
+                    return `https://cdn.jsdelivr.net/gh/${username}/${repo}/${localPath}`;
+                }
+            }
+            return localPath; 
+        }
+
+        // ==================== [新增优化一] HTML5 头部高优先级网络预加载机制 ====================
+        (function injectPreloads() {
+            const assets = [
+                { path: 'boy.jpg', as: 'image' },
+                { path: 'device.jpg', as: 'image' },
+                { path: 'father.jpg', as: 'image' },
+                { path: 'diary.jpg', as: 'image' },
+                { path: 'bgm.mp3', as: 'audio' }
+            ];
+            assets.forEach(asset => {
+                const link = document.createElement('link');
+                link.rel = 'preload';
+                link.href = getCDNPath(asset.path);
+                link.as = asset.as;
+                if (asset.as === 'audio') {
+                    link.type = 'audio/mpeg';
+                }
+                document.head.appendChild(link);
+            });
+        })();
+
+        // 小说各线索对应的提取内容与交互配置
+        const threadsData = {
+            boy: {
+                tag: "THREAD // 01: 潜水少年",
+                title: "肉身的丈量与不甘",
+                text: [
+                    "在泳池里扑腾了几年后，十二岁的他自信满满地来到海岛，穿上防寒服，开始人生第一次浮潜。但仅仅离岸十几米后，视野下方的空间突然向下延伸，几乎看不到底。教练展示自由下潜，表演在珊瑚丛边吐泡泡自拍，但他却在恐慌。他没想到海的体积感如此压迫皮囊，同样是水，在海里和在泳池里，天差地别。",
+                    "海的水体如此庞大、厚重，又如此难以捉摸。暗流汹涌，明浪翻跃。在他强装镇定、拼命寻找和海的适配感时，只有一种感受前所未有地霸占着他的身体与心灵——自己是多么渺小。",
+                    "现在，他十八岁了，梦想依然是成为一名海洋摄影师。哪怕越来越多的商业素材库和专业影视媒体用上了机器人组合智能体的海底拍摄方式。他不止一次想过，也许他爱的并不是拍摄，而是用自己的身体去感受海，用在场的情绪回应海，用智能体弥补肉身的不足。与其说年纪轻轻就认准了夕阳产业，不如说他在挥霍实验的自由。"
+                ]
+            },
+            device: {
+                tag: "THREAD // 02: 头膜仪",
+                title: "数据流、眼动与边界的消融",
+                text: [
+                    "这款头膜仪尚未公开发行，是内网流传出来的二手实验款，主打“极限放大具身体验”。薄得像层透明膜，却能记录视线的停留、瞳孔的变化、呼吸的频率，内置AI系统，确保定位、景象识别、环境监测，还增设了海底摄像功能，能自动恢复海平面二十米以下流失的红色。",
+                    "这类器材考验的并不是摄影师的技术。你不需要先练成资深潜员、背几十公斤的器材下海，只需要把握最后的决策权：选定画面，定义修复，创意剪切拼贴，AI辅助虚构画面……但少年很快就明白了，所谓素材，意味着等待，取决于机缘；所谓编导，意味着绝对主观意念。",
+                    "少年起身走向海滩……他没有注意到头膜仪在慢慢变薄、变轻，边缘扣在发际线上的痕迹，已几乎隐没不见。突然，少年让头膜仪的系统转入了眼动追踪模式。他启动了物像识别功能，屏幕上立刻跳出“银汉鱼”、“鲹鱼”、“海月水母”等名字，但“人类”的标签闪现了一下又消失了。'Object Unavailable'，故障？他分明看得到那个人影……最后，他想摘下头膜仪，却发现脸上空无一物。"
+                ],
+                widget: "hud"
+            },
+            father: {
+                tag: "THREAD // 03: 父亲",
+                title: "经验与一次性生命的终局",
+                text: [
+                    "父亲依赖经验，感知海洋与世界，而他依赖数据。",
+                    "但父亲的人生只有一次。决定性的时刻出现在燃油系统故障的那一天：螺栓断裂，热油喷溅而出，将人从头到脚淋成黑色。用布去抹，就抹下一层皮肉，没办法，再用冰块包在布里去蹭，直到受不了，倒下。一排男人志愿救险，轮番上阵，抢修了五十六个小时。",
+                    "未来，这样危险的工作应该全部交由智能体去做，让身体从此豁免劳作、受苦，让父亲这样的人类从容享受无用的幸福。父亲留下的最后一本色彩日志，最后一页画着两片交叠的蓝色：天在蓝调时刻，海是平静的苍蓝。父亲想把所有的蓝色都给他。父亲因此永恒，蓝色也因此永恒。"
+                ]
+            },
+            journal: {
+                tag: "THREAD // 04: 彩绘日志",
+                title: "手调的色块与海色日志",
+                text: [
+                    "父亲并不会画画，但喜欢调出天蓝、深蓝、黑蓝、闪电蓝、玻璃蓝、青瓷蓝……在色块下面，父亲写上年、月、日、时、分，归航时，就会把一本色彩日志送给他。有时，海的颜色旁边还有父亲当天想到的事，想说的话。"
+                ],
+                widget: "colors"
+            },
+            ocean: {
+                tag: "THREAD // 05: 海洋",
+                title: "名为“蓝”的催眠与虚无",
+                text: [
+                    "名为“海”的存在，事实上是“无”：无数、无限、无名。无论有机无机，亿万年来的一切，都存储在海里。",
+                    "名为“蓝”的存在，事实上也囊括了从光到波、从眼到心、从有到无的一切。无边无际的蓝，催眠了他，绕过常识，绕过伦理，绕过日夜，绕过鬼神，绕过一百公里外的船帆，绕过一千公里外的鲸落，绕过算法，绕过主体。边界在蓝色中消失，此刻，他走在海边，海也仿佛游走在他的身体里。",
+                    "被决定的时刻还没到来……或是，已过去了？不确定。像硬盘一样被推出的躯体空荡荡的。新的能量盘踞下来，像只无视稻草人的渡鸦。太阳落下了海平面。"
+                ]
+            }
+        };
+
+        // 图片加载失败自动尝试其他后缀的自适应兼容算法（支持 CDN 代理）
+        function handleImgError(imgElement) {
+            const baseName = imgElement.dataset.basename;
+            const extensions = ['.png', '.jpeg', '.JPG', '.PNG', '.JPEG', '.webp'];
+            let currentExtIdx = imgElement.dataset.extIdx ? parseInt(imgElement.dataset.extIdx) : 0;
+            if (currentExtIdx < extensions.length) {
+                imgElement.dataset.extIdx = currentExtIdx + 1;
+                const nextFile = baseName + extensions[currentExtIdx];
+                imgElement.src = getCDNPath(nextFile);
+            } else {
+                imgElement.style.display = 'none';
+            }
+        }
+
+        // ==================== 极速流式缓冲音乐播放器 ====================
+        function toggleMusic() {
+            const audio = document.getElementById("bgmAudio");
+            const btn = document.getElementById("musicBtn");
+            
+            if (audio.paused) {
+                if (audio.readyState < 2) {
+                    btn.innerText = "[ BGM: LOADING... ]";
+                    btn.classList.add("border-amber-500", "text-amber-500");
+                    btn.classList.remove("border-techcyan/40", "text-techcyan");
+                }
+                
+                audio.play().then(() => {
+                    btn.innerText = "[ BGM: ON ]";
+                    btn.classList.add("border-techgreen", "text-techgreen");
+                    btn.classList.remove("border-amber-500", "text-amber-500", "border-techcyan/40", "text-techcyan");
+                }).catch(e => {
+                    audio.addEventListener('canplay', () => {
+                        audio.play();
+                        btn.innerText = "[ BGM: ON ]";
+                        btn.classList.add("border-techgreen", "text-techgreen");
+                        btn.classList.remove("border-amber-500", "text-amber-500");
+                    }, { once: true });
+                });
+            } else {
+                audio.pause();
+                btn.innerText = "[ BGM: OFF ]";
+                btn.classList.remove("border-techgreen", "text-techgreen", "border-amber-500", "text-amber-500");
+                btn.classList.add("border-techcyan/40", "text-techcyan");
+            }
+        }
+
+        // 切换到具体线索页面（使用 w-full h-auto 保持无损比例不裁剪头部）
+        function showThread(key) {
+            const data = threadsData[key];
+            if (!data) return;
+
+            // 隐藏 HUB，显示 ThreadView
+            gsap.to("#hubView", { duration: 0.4, opacity: 0, display: "none", onComplete: () => {
+                document.getElementById("threadTag").innerText = data.tag;
+                document.getElementById("threadTitle").innerText = data.title;
+                
+                // 动态拼装图片组件（增加 decoding="async" 优化渲染线程，防止GSAP动画掉帧）
+                let imgHtml = "";
+                if (key === 'boy') {
+                    imgHtml = `<img decoding="async" src="${getCDNPath('boy.jpg')}" data-basename="boy" onerror="handleImgError(this)" alt="[ 潜水少年在潜店门口 ]" class="w-full h-auto rounded-lg border border-techcyan/30 mb-6 opacity-95 hover:opacity-100 transition-opacity shadow-lg shadow-techcyan/10">`;
+                } else if (key === 'device') {
+                    imgHtml = `<img decoding="async" src="${getCDNPath('device.jpg')}" data-basename="device" onerror="handleImgError(this)" alt="[ 头膜仪极显具身体验 ]" class="w-full h-auto rounded-lg border border-techgreen/30 mb-6 opacity-95 hover:opacity-100 transition-opacity shadow-lg shadow-techgreen/10">`;
+                } else if (key === 'father') {
+                    imgHtml = `<img decoding="async" src="${getCDNPath('father.jpg')}" data-basename="father" onerror="handleImgError(this)" alt="[ 父亲在颤动的甲板上 ]" class="w-full h-auto rounded-lg border border-slate-400/30 mb-6 opacity-95 hover:opacity-100 transition-opacity shadow-lg shadow-slate-400/10">`;
+                } else if (key === 'journal') {
+                    imgHtml = `<img decoding="async" src="${getCDNPath('diary.jpg')}" data-basename="diary" onerror="handleImgError(this)" alt="[ 父亲的彩绘日志 ]" class="w-full h-auto rounded-lg border border-amber-400/30 mb-6 opacity-95 hover:opacity-100 transition-opacity shadow-lg shadow-amber-400/10">`;
+                }
+
+                // 填充内容
+                const textContainer = document.getElementById("threadText");
+                textContainer.innerHTML = imgHtml + data.text.map(p => `<p class="mb-4">${p}</p>`).join('');
+
+                // 处理专属交互组件
+                const widgetContainer = document.getElementById("specialWidget");
+                widgetContainer.innerHTML = "";
+                widgetContainer.classList.add("hidden");
+
+                if (data.widget === "hud") {
+                    widgetContainer.classList.remove("hidden");
+                    widgetContainer.innerHTML = `
+                        <div class="bg-black/40 border border-techcyan/30 rounded-lg p-4 font-mono text-xs text-techcyan grid grid-cols-2 md:grid-cols-4 gap-4 animate-pulse">
+                            <div>[MEM: 93%]</div>
+                            <div>[TEMP: 27.4℃]</div>
+                            <div>[VISIBILITY: 38.0m]</div>
+                            <div>[SALINITY: 34.8%]</div>
+                            <div>[PH INDEX: 8.08]</div>
+                            <div>[WIND: SE 8 KTS]</div>
+                            <div>[COLOR CODES: 7506C-5405C]</div>
+                            <div class="text-techgreen">[SYS MODE: EYE_TRACKING]</div>
+                        </div>
+                    `;
+                } else if (data.widget === "colors") {
+                    widgetContainer.classList.remove("hidden");
+                    widgetContainer.innerHTML = `
+                        <p class="text-xs text-slate-400 mb-3 font-mono">// 点击色块唤醒父亲随笔</p>
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="selectColor('薄荷绿', '“这次在浅滩看到的海水是薄荷绿的，好像漱口水呀！” — 父亲随船日志')" class="px-3 py-2 rounded bg-[#7fffd4]/20 border border-[#7fffd4] text-xs text-[#7fffd4] hover:bg-[#7fffd4]/30 transition-all">薄荷绿</button>
+                            <button onclick="selectColor('外海黑', '“第一次看到那么黑的海，像是海的颜色被切断了，你知道为什么吗？因为船驶过了大陆架的尽头。”')" class="px-3 py-2 rounded bg-[#030712]/40 border border-[#4b5563] text-xs text-slate-300 hover:bg-[#030712]/60 transition-all">外海黑</button>
+                            <button onclick="selectColor('闪电蓝', '“在暴雨前的海面上调出了雷电交加的闪电蓝。在颤动的甲板上，颜料是最好的延时摄影。”')" class="px-3 py-2 rounded bg-[#1e40af]/30 border border-[#3b82f6] text-xs text-sky-400 hover:bg-[#1e40af]/50 transition-all">闪电蓝</button>
+                            <button onclick="selectColor('苍蓝色', '“最后一页画着两片交叠的蓝色：天在蓝调时刻，海是平静的苍蓝。想把所有的蓝色都给你。”')" class="px-3 py-2 rounded bg-[#3a5a40]/20 border border-[#a3b18a] text-xs text-[#a3b18a] hover:bg-[#3a5a40]/40 transition-all">平静苍蓝</button>
+                        </div>
+                        <div id="colorDiaryQuote" class="mt-4 p-3 bg-white/5 border-l-2 border-amber-400 text-xs italic text-amber-200 hidden"></div>
+                    `;
+                }
+
+                const threadView = document.getElementById("threadView");
+                threadView.style.display = "block";
+                gsap.fromTo(threadView, { opacity: 0, y: 20 }, { duration: 0.5, opacity: 1, y: 0 });
+            }});
+        }
+
+        function backToHub() {
+            gsap.to("#threadView", { duration: 0.4, opacity: 0, y: 20, onComplete: () => {
+                document.getElementById("threadView").style.display = "none";
+                const hubView = document.getElementById("hubView");
+                hubView.style.display = "flex";
+                gsap.fromTo(hubView, { opacity: 0 }, { duration: 0.5, opacity: 1 });
+            }});
+        }
+
+        function selectColor(name, quote) {
+            const box = document.getElementById("colorDiaryQuote");
+            box.innerText = quote;
+            box.classList.remove("hidden");
+            gsap.fromTo(box, { opacity: 0, x: -10 }, { duration: 0.3, opacity: 1, x: 0 });
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                backToHub();
+            }
+        });
+
+        // ==================== [新增优化二] 资源后台静默预加载 + Cache Storage 离线存储逻辑 ====================
+        window.addEventListener('DOMContentLoaded', () => {
+            const cacheName = 'deepsea-story-cache-v1';
+            const assetsToCache = [
+                getCDNPath('boy.jpg'),
+                getCDNPath('device.jpg'),
+                getCDNPath('father.jpg'),
+                getCDNPath('diary.jpg'),
+                getCDNPath('bgm.mp3')
+            ];
+
+            // 1. 优先采用原生 Cache Storage API 离线存储资源，保证 0ms 级别二次访问速度
+            if ('caches' in window) {
+                caches.open(cacheName).then(cache => {
+                    cache.addAll(assetsToCache).catch(err => {
+                        console.log("正在使用底层网络连接拉取和加载资源...");
+                    });
+                });
+            }
+
+            // 2. 经典 Image 对象与音频后台流式加载兜底
+            assetsToCache.slice(0, 4).forEach(src => {
+                const img = new Image();
+                img.src = src;
+            });
+
+            // 3. 预载入流式音频
+            const audio = document.getElementById("bgmAudio");
+            if (audio) {
+                audio.src = getCDNPath('bgm.mp3');
+                audio.load();
+                
+                audio.addEventListener('canplaythrough', () => {
+                    const btn = document.getElementById("musicBtn");
+                    if (btn.innerText === "[ BGM: LOADING... ]") {
+                        btn.innerText = "[ BGM: ON ]";
+                        btn.classList.add("border-techgreen", "text-techgreen");
+                        btn.classList.remove("border-amber-500", "text-amber-500");
+                        audio.play();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
